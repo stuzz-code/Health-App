@@ -1,0 +1,311 @@
+<div class="container">
+  <h1>Health Goals & Statistics</h1>
+
+  <!-- Current Statistics Section -->
+  <div class="stats-section">
+    <h2>Your Current State</h2>
+    <div class="stats-grid">
+      @for (stat of currentStats; track stat.name) {
+      <div class="stat-card">
+        <div class="stat-header">
+          <h3>{{ stat.name }}</h3>
+        </div>
+        <div class="stat-content">
+          <div class="metric-display">
+            <div class="metric-value">
+              @if (stat.name === 'Cardio Fitness (1 mile time)') {
+              <input
+                type="text"
+                [(ngModel)]="stat.displayValue"
+                class="metric-input"
+                placeholder="MM:SS"
+                (blur)="onTimeBlur($event)"
+                maxlength="5"
+              />
+              <span class="unit-label">Minutes</span>
+              } @else if (stat.name === 'Cholesterol') {
+              <div class="cholesterol-inputs">
+                <div class="cholesterol-input-group">
+                  <span class="cholesterol-label">Total:</span>
+                  <input
+                    type="number"
+                    [(ngModel)]="stat.totalCholesterol"
+                    class="metric-input cholesterol-input"
+                  />
+                  <span class="unit-label">{{ stat.unit }}</span>
+                </div>
+                <div class="cholesterol-input-group">
+                  <span class="cholesterol-label">HDL:</span>
+                  <input
+                    type="number"
+                    [(ngModel)]="stat.hdlCholesterol"
+                    class="metric-input cholesterol-input"
+                  />
+                  <span class="unit-label">{{ stat.unit }}</span>
+                </div>
+              </div>
+              } @else if (stat.name.startsWith('Strength Training')) {
+              <input type="number" [(ngModel)]="stat.currentValue" class="metric-input" step="1" />
+              <span class="unit-label">lbs (1RM)</span>
+              } @else if (stat.name === 'Sleep') { @if (sleepExpanded) {
+              <div class="sleep-expanded">
+                <div class="sleep-field">
+                  <label>Duration (hrs):</label>
+                  <input
+                    type="number"
+                    [(ngModel)]="stat.sleepDuration"
+                    class="metric-input"
+                    step="0.5"
+                  />
+                </div>
+                <div class="sleep-field">
+                  <label>Efficiency (%):</label>
+                  <input
+                    type="number"
+                    [(ngModel)]="stat.sleepEfficiency"
+                    class="metric-input"
+                    step="1"
+                  />
+                </div>
+                <div class="sleep-field">
+                  <label>REM (%):</label>
+                  <input type="number" [(ngModel)]="stat.sleepRem" class="metric-input" step="1" />
+                </div>
+                <div class="sleep-field">
+                  <label>Deep (%):</label>
+                  <input type="number" [(ngModel)]="stat.sleepDeep" class="metric-input" step="1" />
+                </div>
+                <button class="collapse-btn" (click)="toggleSleepExpansion()">Collapse</button>
+              </div>
+              } @else {
+              <div class="sleep-collapsed-wrapper">
+                <div class="sleep-score-box" (click)="toggleSleepExpansion()">
+                  {{ this.statData.calculatedValues?.sleepScore?.toFixed(1) || 0 }}
+                </div>
+                <span class="unit-label">Score</span>
+              </div>
+              } } @else {
+              <input
+                type="number"
+                [(ngModel)]="stat.currentValue"
+                class="metric-input sleep-input"
+                [step]="stat.name === 'Sleep' ? '0.5' : '1'"
+              />
+              <span class="unit-label">{{ stat.unit }}</span>
+              }
+            </div>
+            <div class="percentile-display">
+              <div class="percentile-number">{{ stat.percentile }}%</div>
+              <div class="percentile-label">Percentile</div>
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="stat.percentile"></div>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Submit Changes Button Card -->
+      <div class="stat-card submit-card">
+        <div class="stat-header">
+          <h3>Update Metrics</h3>
+        </div>
+        <div class="stat-content">
+          <button type="button" class="submit-changes-btn" (click)="submitMetricChanges()">
+            Submit Changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Health Risk Assessment Progress Bar -->
+    <div class="risk-assessment-section">
+      <h2>Current Health Risk Assessment</h2>
+      <div class="overall-progress-container">
+        <div class="progress-bar-large">
+          <!-- Filled portion up to the marker -->
+          <div class="progress-fill-dynamic" [style.width.%]="overallHealthScore">
+            <div
+              class="fill-gradient"
+              [ngClass]="{
+                'gradient-building': overallHealthScore < 33.34,
+                'gradient-progress': overallHealthScore >= 33.34 && overallHealthScore < 66.67,
+                'gradient-excellent': overallHealthScore >= 66.67
+              }"
+            ></div>
+          </div>
+
+          <!-- Empty/unfilled portion -->
+          <div class="progress-empty" [style.width.%]="100 - overallHealthScore"></div>
+
+          <!-- Marker line -->
+          <div class="risk-marker" [style.left.%]="overallHealthScore">
+            <div class="marker-dot"></div>
+            <div class="marker-label">{{ overallHealthScore }}%</div>
+          </div>
+        </div>
+
+        <div class="risk-summary">
+          <div class="risk-percentage">{{ overallHealthScore }}%</div>
+          <div class="risk-description">{{ getRiskDescription() }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goals Health Risk Assessment Progress Bar -->
+  <div class="risk-assessment-section">
+    <h2>Goals Health Risk Assessment</h2>
+    <div class="overall-progress-container">
+      <div class="progress-bar-large">
+        <!-- Filled portion up to the marker -->
+        <div class="progress-fill-dynamic" [style.width.%]="goalHealthScore">
+          <div
+            class="fill-gradient"
+            [ngClass]="{
+              'gradient-building': goalHealthScore < 33.34,
+              'gradient-progress': goalHealthScore >= 33.34 && goalHealthScore < 66.67,
+              'gradient-excellent': goalHealthScore >= 66.67
+            }"
+          ></div>
+        </div>
+
+        <!-- Empty/unfilled portion -->
+        <div class="progress-empty" [style.width.%]="100 - goalHealthScore"></div>
+
+        <!-- Marker line -->
+        <div class="risk-marker" [style.left.%]="goalHealthScore">
+          <div class="marker-dot"></div>
+          <div class="marker-label">{{ goalHealthScore }}%</div>
+        </div>
+      </div>
+
+      <div class="risk-summary">
+        <div class="risk-percentage">{{ goalHealthScore }}%</div>
+        <div class="risk-description">{{ getGoalRiskDescription() }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goals Section -->
+  <div class="goals-section">
+    <h2>Set Your Goals</h2>
+    <div class="stats-grid">
+      @for (goal of goalStats; track goal.name) {
+      <div class="stat-card">
+        <div class="stat-header">
+          <h3>{{ goal.name }}</h3>
+        </div>
+        <div class="stat-content">
+          <div class="metric-display">
+            <div class="metric-value">
+              @if (goal.name === 'Cardio Fitness Goal (1 mile time)') {
+              <input
+                type="text"
+                [(ngModel)]="goal.displayValue"
+                class="metric-input"
+                placeholder="MM:SS"
+                (blur)="onTimeBlur($event)"
+                maxlength="5"
+              />
+              <span class="unit-label">Minutes</span>
+              } @else if (goal.name === 'Cholesterol Goal') {
+              <div class="cholesterol-inputs">
+                <div class="cholesterol-input-group">
+                  <span class="cholesterol-label">Total:</span>
+                  <input
+                    type="number"
+                    [(ngModel)]="goal.totalCholesterol"
+                    class="metric-input cholesterol-input"
+                  />
+                  <span class="unit-label">{{ goal.unit }}</span>
+                </div>
+                <div class="cholesterol-input-group">
+                  <span class="cholesterol-label">HDL:</span>
+                  <input
+                    type="number"
+                    [(ngModel)]="goal.hdlCholesterol"
+                    class="metric-input cholesterol-input"
+                  />
+                  <span class="unit-label">{{ goal.unit }}</span>
+                </div>
+              </div>
+              } @else if (goal.name === 'Blood Sugar Goal (hbA1c)') {
+              <input type="number" [(ngModel)]="goal.goalValue" class="metric-input" step="0.1" />
+              <span class="unit-label">%</span>
+              } @else if (goal.name === 'Sleep Goal') { @if (goalSleepExpanded) {
+              <!-- Expanded view with 4 input fields -->
+              <div class="sleep-expanded">
+                <div class="sleep-field">
+                  <label>Duration (hrs):</label>
+                  <input
+                    type="number"
+                    [(ngModel)]="goal.sleepDuration"
+                    class="metric-input"
+                    step="0.5"
+                  />
+                </div>
+                <div class="sleep-field">
+                  <label>Efficiency (%):</label>
+                  <input
+                    type="number"
+                    [(ngModel)]="goal.sleepEfficiency"
+                    class="metric-input"
+                    step="1"
+                  />
+                </div>
+                <div class="sleep-field">
+                  <label>REM (%):</label>
+                  <input type="number" [(ngModel)]="goal.sleepRem" class="metric-input" step="1" />
+                </div>
+                <div class="sleep-field">
+                  <label>Deep (%):</label>
+                  <input type="number" [(ngModel)]="goal.sleepDeep" class="metric-input" step="1" />
+                </div>
+                <button class="collapse-btn" (click)="toggleGoalSleepExpansion()">Collapse</button>
+              </div>
+              } @else {
+              <div class="sleep-collapsed-wrapper">
+                <div class="sleep-score-box" (click)="toggleGoalSleepExpansion()">
+                  {{ goal.goalValue || 0 }}
+                </div>
+                <span class="unit-label">Score</span>
+              </div>
+              } } @else {
+              <!-- Default input for other goals -->
+              <input
+                type="number"
+                [(ngModel)]="goal.goalValue"
+                class="metric-input"
+                [step]="goal.name === 'Sleep Goal' ? '0.5' : '1'"
+              />
+              <span class="unit-label">{{ goal.unit }}</span>
+              }
+            </div>
+            <div class="percentile-display">
+              <div class="percentile-number">{{ goal.progress }}%</div>
+              <div class="percentile-label">Percentile</div>
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="goal.progress"></div>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Submit Goals Button Card -->
+      <div class="stat-card submit-card">
+        <div class="stat-header">
+          <h3>Update Goals</h3>
+        </div>
+        <div class="stat-content">
+          <button type="button" class="submit-changes-btn" (click)="submitGoalChanges()">
+            Submit Goals
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
